@@ -15,32 +15,46 @@ import java.util.concurrent.locks.ReentrantLock;
  * @date 2019/12/03 09:33
  */
 public class WheelThreadPool {
-    /** 核心线程数 */
+    /**
+     * 核心线程数
+     */
     private int coreCount;
-    /** 最大线程数 */
+    /**
+     * 最大线程数
+     */
     private int maxCount;
-    /** 阻塞队列 */
+    /**
+     * 阻塞队列
+     */
     private BlockingQueue<Runnable> queue;
-    /** 线程名字前缀 */
+    /**
+     * 线程名字前缀
+     */
     private String prefix;
-    /** 线程运行完成后存活时长 */
+    /**
+     * 线程运行完成后存活时长
+     */
     private long keepAliveTime;
-    /** 线程运行完成后存活时长单位 */
+    /**
+     * 线程运行完成后存活时长单位
+     */
     private TimeUnit keepAliveTimeUnit;
-
-    /** 当前活动线程数 */
-    private AtomicInteger activeCount = new AtomicInteger(0);
-    /** 总共完成线程数 */
-    private AtomicInteger completeCount = new AtomicInteger(0);
-    /** 线程编号 */
+    /**
+     * 线程编号
+     */
     private AtomicInteger threadNum = new AtomicInteger(0);
-    /** 线程锁 */
+    /**
+     * 线程锁
+     */
     private Lock lock = new ReentrantLock();
-    /** 线程池状态：-1 running,0 shutdown,1 shutdown now */
+    /**
+     * 剩余线程数
+     */
+    private AtomicInteger remainingCount = new AtomicInteger(0);
+    /**
+     * 线程池状态，-1：正在运行，0：暴力关闭，1：优雅关闭
+     */
     private volatile int status = -1;
-    /** 工作线程 */
-    private Set<Worker> workers = ConcurrentHashMap.newKeySet();
-
 
     public WheelThreadPool(int coreCount, int maxCount, long keepAliveTime, TimeUnit keepAliveTimeUnit, BlockingQueue<Runnable> queue, String prefix) {
         this.coreCount = coreCount;
@@ -51,46 +65,43 @@ public class WheelThreadPool {
         this.keepAliveTimeUnit = keepAliveTimeUnit;
     }
 
+    /**
+     * 提交线程
+     *
+     * @param runnable
+     */
     public void execute(Runnable runnable) {
-        if (status >= 0) {
-            throw new RuntimeException("线程池已经关闭");
+        if (runnable == null) {
+            throw new NullPointerException("线程不能为空");
         }
+        if (status >= 0) {
+            throw new RuntimeException("线程池已经结束");
+        }
+        remainingCount.incrementAndGet();
         // 当前运行线程数小于核心线程数
-        if (activeCount.get() < coreCount) {
-            activeCount.incrementAndGet();
-            Worker w = new Worker(runnable);
-            workers.add(w);
-            w.start();
+        if (workers.size() < coreCount) {
+            addWorker(runnable);
             return;
         }
         boolean offer = queue.offer(runnable);
         if (!offer) {
-            if (activeCount.get() < maxCount) {
-                activeCount.incrementAndGet();
-                Worker w = new Worker(runnable);
-                workers.add(w);
-                w.start();
+            if (workers.size() < maxCount) {
+                addWorker(runnable);
                 return;
             }
+            //这里简单处理直接抛异常了
             throw new RuntimeException("线程池已经满了");
         }
     }
 
-    public void stop() {
-        status = 0;
-    }
 
-    public void stopNow() {
-        status = 1;
-        for (Worker worker : workers) {
-            if (!worker.isInterrupted()) {
-                worker.interrupt();
-            }
-        }
-    }
-
-    public class Worker extends Thread {
-        /** 用户传的参数线程实现 */
+    /**
+     * 工作线程
+     */
+    class Worker extends Thread {
+        /**
+         * 用户传的参数线程实现
+         */
         private Runnable runnable;
 
         public Worker(Runnable runnable) {
@@ -99,85 +110,103 @@ public class WheelThreadPool {
 
         @Override
         public void run() {
-            Worker work = null;
+            if (status == 0) {
+                return;
+            }
+            //线程是否执行成功标记，默认成功
+            boolean isSuccess = true;
             try {
                 Thread.currentThread().setName(String.format(prefix + "-%s", threadNum.getAndIncrement()));
-                while (runnable != null || (work = getTask()) != null) {
+                while (runnable != null || (runnable = getQueueTask()) != null) {
                     try {
-                        if (runnable != null) {
-                            runnable.run();
-                        } else {
-                            work.runnable.run();
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        throw e;
+                        runnable.run();
                     } finally {
+                        remainingCount.decrementAndGet();
                         runnable = null;
-                        completeCount.getAndIncrement();
                     }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                activeCount.incrementAndGet();
-                Worker w = new Worker(null);
-                workers.add(w);
-                w.start();
+                // 异常情况把标记置为false
+                isSuccess = false;
             } finally {
-                activeCount.decrementAndGet();
-                workers.remove(this);
-                if (status >= 0 && queue.size() == 0) {
-                    stopNow();
+                if (status != 0) {
+                    // 当前活动线程数-1
+                    workers.remove(this);
+                    if (!isSuccess) {
+                        // 如果异常则重新创建一个Worker线程
+                        addWorker(null);
+                    }
+                    interruptWorkers(status == 1 && remainingCount.get() == 0);
                 }
             }
         }
     }
 
-    private Worker getTask() {
-        if (status >= 0 && queue.size() == 0) {
-            return null;
-        }
+    /**
+     * 获取队列任务
+     * @return
+     */
+    private Runnable getQueueTask() {
         try {
-            lock.lock();
-            if (activeCount.get() <= coreCount) {
-                Runnable take = queue.take();
-                return new Worker(take);
-            } else {
-                Runnable poll = queue.poll(keepAliveTime, keepAliveTimeUnit);
-                if (poll == null) {
-                    return null;
-                } else {
-                    return new Worker(poll);
+            Runnable r = queue.poll(keepAliveTime, keepAliveTimeUnit);
+            if (r == null) {
+                lock.lock();
+                try {
+                    if (workers.size() > coreCount) {
+                        return null;
+                    }
+                } finally {
+                    lock.unlock();
                 }
+                r = queue.take();
             }
-        } catch (InterruptedException e) {
-        } finally {
-            lock.unlock();
+            return r;
+        } catch (InterruptedException ignore) {
         }
         return null;
     }
 
-    public int getCoreCount() {
-        return coreCount;
+    private void interruptWorkers(boolean b) {
+        if (b) {
+            for (Worker worker : workers) {
+                if (!worker.isInterrupted()) {
+                    worker.interrupt();
+                }
+            }
+        }
     }
 
-    public int getActiveCount() {
-        return activeCount.get();
+    /**
+     * 新增线程到workers
+     *
+     * @param o
+     */
+    private void addWorker(Runnable o) {
+        Worker w = new Worker(o);
+        workers.add(w);
+        w.start();
     }
 
-    public int getCompleteCount() {
-        return completeCount.get();
+    /**
+     * 保存正在运行的线程
+     */
+    private Set<Worker> workers = ConcurrentHashMap.newKeySet();
+
+    /**
+     * 暴力关闭线程池
+     */
+    public void stopNow() {
+        status = 0;
+        interruptWorkers(true);
     }
 
-    public int getMaxCount() {
-        return maxCount;
-    }
 
-    public BlockingQueue<Runnable> getQueue() {
-        return queue;
-    }
-
-    public Set<Worker> getWorkers() {
-        return workers;
+    /**
+     * 优雅关闭线程池
+     */
+    public void stop() {
+        status = 1;
+        interruptWorkers(remainingCount.get() == 0);
     }
 }
