@@ -1,3 +1,10 @@
 spring:
   application:
     name: anything-lab
+  data:
+    mongodb:
+      host: 172.16.157.239
+      port: 6383
+      username: root
+      password: 2ICb6XyPJgdv
+      database: admin
