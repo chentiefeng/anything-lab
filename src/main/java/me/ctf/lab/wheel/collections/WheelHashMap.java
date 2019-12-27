@@ -40,6 +40,7 @@ public class WheelHashMap<K, V> {
             return s.toString();
         }
     }
+
     /**
      * hash表
      */
@@ -79,17 +80,24 @@ public class WheelHashMap<K, V> {
             table[idx] = new Node<>(hash, key, val, null);
         } else {
             //hash冲突，链表走一波
-            if (c.hash == hash && (Objects.equals(key, c.key))) {
-                //hash相等，equals相等，直接替换
-                c.key = key;
-                c.val = val;
-            } else {
-                //否则，加入链表
-                while (c.next != null) {
-                    //找到链表最后一个元素
-                    c = c.next;
+            while (c.next != null) {
+                if (c.hash == hash && (Objects.equals(key, c.key))) {
+                    //链表中间有相同的key，直接替换key和val，跳出循环
+                    c.key = key;
+                    c.val = val;
+                    break;
                 }
-                c.next = new Node<>(hash, key, val, null);
+            }
+            if (c.next == null) {
+                //链表中间跳出循环的next肯定不为null，所以进入这里的肯定是最后一个节点
+                if (c.hash == hash && (Objects.equals(key, c.key))) {
+                    //尝试匹配最后节点
+                    c.key = key;
+                    c.val = val;
+                } else {
+                    //直接在最后节点加上
+                    c.next = new Node<>(hash, key, val, null);
+                }
             }
         }
         //3.负载到了扩容一波
