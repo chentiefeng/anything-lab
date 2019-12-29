@@ -16,14 +16,6 @@ import java.util.function.Predicate;
  */
 public class BloomFilter<T> {
     /**
-     * 期望数量
-     */
-    private int expectedInsertions;
-    /**
-     * 准确率
-     */
-    private double fpp;
-    /**
      * hash
      */
     private Funnel<T> funnel;
@@ -43,16 +35,31 @@ public class BloomFilter<T> {
      * bit array
      */
     private BitSet bitSet;
+    /**
+     * put
+     */
+    private Consumer<Integer> putConsumer;
+    /**
+     * contain
+     */
+    private Predicate<Integer> containPredicate;
 
     private BloomFilter(int expectedInsertions, double fpp, Funnel<T> funnel, boolean local) {
-        this.expectedInsertions = expectedInsertions;
-        this.fpp = fpp == 0 ? Double.MIN_VALUE : fpp;
+        extracted(expectedInsertions, fpp, funnel, local);
+    }
+    private BloomFilter(int expectedInsertions, double fpp, Funnel<T> funnel, boolean local, Consumer<Integer> putConsumer,Predicate<Integer> containPredicate ) {
+        extracted(expectedInsertions, fpp, funnel, local);
+        this.putConsumer = putConsumer;
+        this.containPredicate = containPredicate;
+        
+    }
+    private void extracted(int expectedInsertions, double fpp, Funnel<T> funnel, boolean local) {
+        fpp = fpp == 0 ? Double.MIN_VALUE : fpp;
         this.funnel = funnel;
         this.numBits = (int) (-expectedInsertions * Math.log(fpp) / (Math.log(2) * Math.log(2)));
         this.numHashFunctions = Math.max(1, (int) Math.round((double) numBits / expectedInsertions * Math.log(2)));
         this.local = local;
     }
-
     /**
      * 根据key获取bitmap下标 方法来自guava
      *
@@ -77,47 +84,40 @@ public class BloomFilter<T> {
      * put
      *
      * @param key
-     * @param consumer 非本地bloom自行实现set index
      */
-    public void put(T key, Consumer<Integer> consumer) {
-        if (consumer == null) {
+    public void put(T key) {
+        if (putConsumer == null) {
             if (local) {
                 if (bitSet == null) {
                     bitSet = new BitSet(numBits);
                 }
-                consumer = idx -> bitSet.set(idx);
+                putConsumer = idx -> bitSet.set(idx);
             } else {
                 throw new IllegalArgumentException("Consumer must not be null if `local` is false");
             }
         }
         int[] indexs = getIndexs(key);
-        Arrays.stream(indexs).forEach(consumer::accept);
+        Arrays.stream(indexs).forEach(putConsumer::accept);
     }
 
-    public void put(T key) {
-        put(key, null);
-    }
 
-    public boolean contain(T key, Predicate<Integer> predicate) {
-        if (predicate == null) {
+    public boolean contain(T key) {
+        if (containPredicate == null) {
             if (local) {
-                predicate = idx -> bitSet.get(idx);
+                containPredicate = idx -> bitSet.get(idx);
             } else {
-                throw new IllegalArgumentException("Predicate must not be null if `local` is false");
+                throw new IllegalArgumentException("containPredicate must not be null if `local` is false");
             }
         }
         int[] indexs = getIndexs(key);
         for (int index : indexs) {
-            if (!predicate.test(index)) {
+            if (!containPredicate.test(index)) {
                 return false;
             }
         }
         return true;
     }
 
-    public boolean contain(T key) {
-        return contain(key, null);
-    }
 
     static class BloomFilterBuilder<T> {
         /**
@@ -132,10 +132,6 @@ public class BloomFilter<T> {
          * hash funnel
          */
         private Funnel<T> funnel;
-        /**
-         * 是否本地bloom
-         */
-        private boolean local = true;
 
 
         public BloomFilterBuilder<T> expectedInsertions(int expectedInsertions) {
@@ -153,14 +149,12 @@ public class BloomFilter<T> {
             return this;
         }
 
-        public BloomFilterBuilder<T> local(boolean local) {
-            this.local = local;
-            return this;
-        }
-
 
         public BloomFilter<T> build() {
-            return new BloomFilter<>(expectedInsertions, fpp, funnel, local);
+            return new BloomFilter<>(expectedInsertions, fpp, funnel, true);
+        }
+        public BloomFilter<T> build(Consumer<Integer> putConsumer, Predicate<Integer> containPredicate) {
+            return new BloomFilter<>(expectedInsertions, fpp, funnel, false, putConsumer, containPredicate);
         }
     }
 }
