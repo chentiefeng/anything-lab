@@ -10,7 +10,7 @@
 - [时间正则](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/datetimeregex/DateTimeRegex.java)
 - [动态数据源应用](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/dynamicdatasource)
 - [一致hash应用](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/consistenthash/SubTableRoutingConsistentHashTest.java)
-- [WaitNotify生产消费](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/WaitNotify.java)
+- [WaitNotify案例](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/ParityPrint.java)
 - [布隆过滤器](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/bloomfilter/BloomFilter.java)
 
 ### 小工具
