@@ -10,7 +10,7 @@ import java.util.Scanner;
  */
 public class ParityPrint {
 
-    private int i = -1;
+    private volatile int i = -1;
     
     public static void main(String[] args) throws InterruptedException {
         ParityPrint parityPrint = new ParityPrint();
