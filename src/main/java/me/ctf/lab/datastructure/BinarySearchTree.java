@@ -1,12 +1,10 @@
 package me.ctf.lab.datastructure;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.Queue;
-import java.util.Set;
-import java.util.function.Consumer;
+import com.google.gson.GsonBuilder;
+
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * 二叉搜索树（二叉排序树）
@@ -22,13 +20,15 @@ public class BinarySearchTree<T extends Comparable<T>> {
      * @see Comparable
      */
     public static class Node<T extends Comparable<T>> {
-        T data;
-        Node<T> parent;
-        Node<T> left;
-        Node<T> right;
-        int depth;
+        private T data;
+        private Node<T> parent;
+        private Node<T> left;
+        private Node<T> right;
+        private int depth;
+        //序号
+        private int index;
 
-        public Node(T data, Node<T> parent, Node<T> left, Node<T> right, int depth) {
+        private Node(T data, Node<T> parent, Node<T> left, Node<T> right, int depth) {
             this.data = data;
             this.parent = parent;
             this.left = left;
@@ -36,15 +36,15 @@ public class BinarySearchTree<T extends Comparable<T>> {
             this.depth = depth;
         }
 
-        private T getData() {
+        public T getData() {
             return this.data;
         }
 
-        private Node<T> getParent() {
+        public Node<T> getParent() {
             return this.parent;
         }
 
-        private Node<T> getLeft() {
+        public Node<T> getLeft() {
             return this.left;
         }
 
@@ -52,9 +52,10 @@ public class BinarySearchTree<T extends Comparable<T>> {
             return this.right;
         }
 
-        private int getDepth() {
+        public int getDepth() {
             return this.depth;
         }
+
 
         @Override
         public String toString() {
@@ -94,11 +95,17 @@ public class BinarySearchTree<T extends Comparable<T>> {
 
     }
 
-    /** 根节点 */
+    /**
+     * 根节点
+     */
     private Node<T> root;
-    /** 节点数量 */
+    /**
+     * 节点数量
+     */
     private int size = 0;
-    /** 节点层级 */
+    /**
+     * 节点层级
+     */
     private Set<Node<T>>[] nodeLevel;
 
     /**
@@ -116,7 +123,7 @@ public class BinarySearchTree<T extends Comparable<T>> {
             c = new Node<>(data, null, null, null, 1);
             size++;
             nodeLevel = (Set<Node<T>>[]) new Set[1];
-            Set<Node<T>> set = new HashSet<Node<T>>(1);
+            Set<Node<T>> set = new HashSet<>(1);
             set.add(c);
             nodeLevel[0] = set;
             return (root = c);
@@ -165,7 +172,7 @@ public class BinarySearchTree<T extends Comparable<T>> {
         }
         Set<Node<T>> set = nodeLevel[depth - 1];
         if (set == null) {
-            set = new HashSet<Node<T>>();
+            set = new HashSet<>();
             set.add(ret);
             nodeLevel[depth - 1] = set;
         } else {
@@ -224,20 +231,38 @@ public class BinarySearchTree<T extends Comparable<T>> {
 
     /**
      * 广度优先遍历
-     * 
-     * @param predicate
+     *
+     * @param predicate break if return false
      */
     public void bfForEach(Predicate<T> predicate) {
         breadthFirstTraversal(root, predicate);
     }
 
+    public int depth() {
+        return this.nodeLevel.length;
+    }
+
+    public int size() {
+        return this.size;
+    }
+
     /**
      * 广度优先遍历
-     * 
+     *
      * @param n
      * @param predicate break if return false
      */
     public static <T extends Comparable<T>> void breadthFirstTraversal(Node<T> n, Predicate<T> predicate) {
+        breadthFirstTraversalForNode(n, tNode -> predicate.test(tNode.data));
+    }
+
+    /**
+     * 广度优先遍历
+     *
+     * @param n
+     * @param predicate break if return false
+     */
+    public static <T extends Comparable<T>> void breadthFirstTraversalForNode(Node<T> n, Predicate<Node<T>> predicate) {
         Deque<Node<T>> queue = new ArrayDeque<>();
         queue.offer(n);
         Node<T> c;
@@ -249,7 +274,7 @@ public class BinarySearchTree<T extends Comparable<T>> {
             if (c.right != null) {
                 queue.offer(c.right);
             }
-            if (!predicate.test(c.data)) {
+            if (!predicate.test(c)) {
                 break;
             }
         }
@@ -274,28 +299,41 @@ public class BinarySearchTree<T extends Comparable<T>> {
      * @see TraversalTypeEnum
      */
     public static <T extends Comparable<T>> void deepFirstTraversal(Node<T> node, Predicate<T> predicate,
-            TraversalTypeEnum traversalTypeEnum) {
+                                                                    TraversalTypeEnum traversalTypeEnum) {
+        deepFirstTraversalForNode(node, tNode -> predicate.test(tNode.data), traversalTypeEnum);
+    }
+
+    /**
+     * 深度优先遍历，可选类型
+     *
+     * @param node
+     * @param predicate         break if return false
+     * @param traversalTypeEnum
+     * @see TraversalTypeEnum
+     */
+    public static <T extends Comparable<T>> void deepFirstTraversalForNode(Node<T> node, Predicate<Node<T>> predicate,
+                                                                           TraversalTypeEnum traversalTypeEnum) {
         if (node == null) {
             return;
         }
         if (TraversalTypeEnum.PRE.equals(traversalTypeEnum)) {
-            if (!predicate.test(node.data)) {
+            if (!predicate.test(node)) {
                 return;
             }
         }
         if (node.left != null) {
-            deepFirstTraversal(node.left, predicate, traversalTypeEnum);
+            deepFirstTraversalForNode(node.left, predicate, traversalTypeEnum);
         }
         if (TraversalTypeEnum.IN.equals(traversalTypeEnum)) {
-            if (!predicate.test(node.data)) {
+            if (!predicate.test(node)) {
                 return;
             }
         }
         if (node.right != null) {
-            deepFirstTraversal(node.right, predicate, traversalTypeEnum);
+            deepFirstTraversalForNode(node.right, predicate, traversalTypeEnum);
         }
         if (TraversalTypeEnum.POST.equals(traversalTypeEnum)) {
-            predicate.test(node.data);
+            predicate.test(node);
         }
     }
 
@@ -311,7 +349,7 @@ public class BinarySearchTree<T extends Comparable<T>> {
 
     /**
      * 根据数据删除节点
-     * 
+     *
      * @param data
      * @return
      */
@@ -322,7 +360,7 @@ public class BinarySearchTree<T extends Comparable<T>> {
 
     /**
      * 从n开始，删除数据为data的节点
-     * 
+     *
      * @param n
      * @param data
      */
@@ -339,13 +377,13 @@ public class BinarySearchTree<T extends Comparable<T>> {
                 // 根节点
                 next.parent = null;
                 root = next;
-                deleteNodeLevel(node);
+                adjustNodeLevel(node);
                 node = null;
                 size--;
                 return;
             }
             int compare = node.data.compareTo(pNode.data);
-            deleteNodeLevel(node);
+            adjustNodeLevel(node);
             node = null;
             size--;
             if (compare > 0) {
@@ -371,58 +409,97 @@ public class BinarySearchTree<T extends Comparable<T>> {
         remove(node.right, next.data);
     }
 
-    // @Override
-    // public String toString() {
-    // if (root == null) {
-    // return "";
-    // }
-    // Node<T> n = root, nl, nr;
-    // StringBuilder sb = new StringBuilder(root.data.toString() + "\n");
-    // while ((nl = n.left) != null && (nr = n.right) != null) {
-    // sb.append(nl.data.toString() + " " + nr.data.toString() + "\n");
-
-    // }
-    // }
-
-    private void deleteNodeLevel(Node<T> node) {
-        int oldLen = nodeLevel.length;
-        // 0 1 2 3 4 5
-        // 1 2 3 4 5 6
-        // depth = 4
-        // depth-1 = 3
-        // 0 1 2 4 5
-        int depth = node.depth;
-        Set<Node<T>> set = nodeLevel[depth - 1];
-        set.remove(node);
-        if (set.isEmpty()) {
-            for (int i = depth; i < oldLen; i++) {
-                Set<Node<T>> s = nodeLevel[i];
-                s.forEach(n -> n.depth--);
+    /**
+     * 调整节点层级
+     *
+     * @param node
+     */
+    private void adjustNodeLevel(Node<T> node) {
+        breadthFirstTraversalForNode(node, n -> {
+            int depth = n.depth;
+            Set<Node<T>> set = nodeLevel[n.depth - 1];
+            set.remove(n);
+            n.depth--;
+            if (n.left != null) {
+                set.add(n.left);
             }
-            Set<Node<T>>[] newArray = new Set[oldLen - 1];
-            System.arraycopy(nodeLevel, 0, newArray, 0, depth - 1);
-            System.arraycopy(nodeLevel, depth, newArray, depth - 1, oldLen - depth);
-            nodeLevel = newArray;
-        }
+            if (n.right != null) {
+                set.add(n.right);
+            }
+            if (set.isEmpty()) {
+                int oldLen = nodeLevel.length;
+                Set<Node<T>>[] newArray = new Set[oldLen - 1];
+                System.arraycopy(nodeLevel, 0, newArray, 0, depth - 1);
+                System.arraycopy(nodeLevel, depth, newArray, depth - 1, oldLen - depth);
+                nodeLevel = newArray;
+            }
+            return true;
+        });
     }
 
-    public static void main(String[] args) {
-        BinarySearchTree<Integer> bst = new BinarySearchTree<>();
-        bst.add(6);
-        bst.add(2);
-        bst.add(11);
-        bst.add(1);
-        bst.add(8);
-        bst.add(15);
-        bst.add(9);
-        bst.add(10);
-        bst.remove(6);
-        for (int i = 0; i < bst.nodeLevel.length; i++) {
-            Set<Node<Integer>> set = bst.nodeLevel[i];
-            System.out.println(set);
+    /**
+     * 根据深度查询节点
+     *
+     * @param depth
+     * @return
+     */
+    public Set<Node<T>> nodesByDepth(int depth) {
+        if (depth < 1 || depth > depth()) {
+            throw new IllegalArgumentException("depth must in range [1, depth()]");
         }
-        // 1
-        // / \
-        // 2 3
+        return this.nodeLevel[depth - 1];
     }
+
+    public String toHtmlShowStr() {
+        String[] arr = new String[(int) Math.pow(2, depth()) - 1];
+        for (Set<Node<T>> nodes : nodeLevel) {
+            for (Node<T> node : nodes) {
+                if (node.parent == null) {
+                    node.index = 0;
+                } else {
+                    if (node.data.compareTo(node.parent.data) > 0) {
+                        node.index = node.parent.index * 2 + 2;
+                    } else {
+                        node.index = node.parent.index * 2 + 1;
+                    }
+                }
+                arr[node.index] = node.toString();
+            }
+        }
+        return "[" + String.join(",", arr) + "]";
+    }
+
+    public String toJsonString() {
+        if (root == null) {
+            return "{}";
+        }
+        Map<String, Object> map = new HashMap<>(2);
+        map.put("id", root.toString());
+        if (nodeLevel.length > 1) {
+            List<Map<String, Object>> children = new ArrayList<>();
+            children.add(map);
+            List<Map<String, Object>> list;
+            for (int i = 1; i < nodeLevel.length; i++) {
+                list = new ArrayList<>();
+                for (Map<String, Object> child : children) {
+                    List<Map<String, Object>> collect = nodeLevel[i].stream()
+                            .filter(n -> n.parent.toString().equals(child.get("id")))
+                            .sorted(Comparator.comparing(o -> o.data))
+                            .map(n -> {
+                                Map<String, Object> m = new HashMap<>(2);
+                                m.put("id", n.toString());
+                                return m;
+                            })
+                            .collect(Collectors.toList());
+                    if (collect.size() > 0) {
+                        child.put("children", collect);
+                        list.addAll(collect);
+                    }
+                }
+                children = list;
+            }
+        }
+        return new GsonBuilder().create().toJson(map);
+    }
+
 }

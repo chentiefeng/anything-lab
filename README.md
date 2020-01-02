@@ -13,5 +13,9 @@
 - [WaitNotify案例](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/ParityPrint.java)
 - [布隆过滤器](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/bloomfilter/BloomFilter.java)
 
+### 数据结构
+- [二叉排序树实现](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/datastructure/BinarySearchTree.java)
+- [二叉排序树页面展示](https://github.com/chentiefeng/anything-lab/blob/master/src/main/resources/static/binary-search-tree.html)
+
 ### 小工具
 - [占位符工具](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/util/PlaceholderUtil.java)
