@@ -15,7 +15,6 @@ public class BinarySearchTreeTest {
         bst.add(15);
         bst.add(9);
         bst.add(10);
-        bst.remove(6);
         System.out.println(bst.toHtmlShowStr());
     }
 }

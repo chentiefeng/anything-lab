@@ -120,14 +120,17 @@ public class BinarySearchTree<T extends Comparable<T>> {
         }
         Node<T> c = root;
         if (c == null) {
+            //根节点为空，初始化树，根节点深度为1
             c = new Node<>(data, null, null, null, 1);
             size++;
+            //初始化节点层级数组
             nodeLevel = (Set<Node<T>>[]) new Set[1];
             Set<Node<T>> set = new HashSet<>(1);
             set.add(c);
             nodeLevel[0] = set;
             return (root = c);
         }
+        //根节点有了之后就开始加子节点
         return addVal(c, data);
     }
 
@@ -141,11 +144,12 @@ public class BinarySearchTree<T extends Comparable<T>> {
     private Node<T> addVal(Node<T> c, T data) {
         int compare = c.data.compareTo(data);
         if (compare == 0) {
+            //如果节点存在直接返回节点
             return c;
         }
-        // c.data > data
         int depth = c.depth + 1;
         Node<T> ret;
+        // c.data > data
         if (compare > 0) {
             if (c.left == null) {
                 size++;
@@ -166,7 +170,9 @@ public class BinarySearchTree<T extends Comparable<T>> {
 
     private void createNodeLevel(int depth, Node<T> ret) {
         if (nodeLevel.length < depth) {
+            //新建一个数组
             Set<Node<T>>[] level = new Set[depth];
+            //将原来的数组复制到新数组
             System.arraycopy(nodeLevel, 0, level, 0, nodeLevel.length);
             nodeLevel = level;
         }
@@ -178,6 +184,16 @@ public class BinarySearchTree<T extends Comparable<T>> {
         } else {
             set.add(ret);
         }
+    }
+
+    /**
+     * 根据数据寻找节点
+     *
+     * @param data
+     * @return
+     */
+    public Node<T> node(T data) {
+        return match(root, data);
     }
 
     /**
@@ -228,58 +244,6 @@ public class BinarySearchTree<T extends Comparable<T>> {
     public void dfForEach(TraversalTypeEnum traversalTypeEnum, Predicate<T> predicate) {
         deepFirstTraversal(root, predicate, traversalTypeEnum);
     }
-
-    /**
-     * 广度优先遍历
-     *
-     * @param predicate break if return false
-     */
-    public void bfForEach(Predicate<T> predicate) {
-        breadthFirstTraversal(root, predicate);
-    }
-
-    public int depth() {
-        return this.nodeLevel.length;
-    }
-
-    public int size() {
-        return this.size;
-    }
-
-    /**
-     * 广度优先遍历
-     *
-     * @param n
-     * @param predicate break if return false
-     */
-    public static <T extends Comparable<T>> void breadthFirstTraversal(Node<T> n, Predicate<T> predicate) {
-        breadthFirstTraversalForNode(n, tNode -> predicate.test(tNode.data));
-    }
-
-    /**
-     * 广度优先遍历
-     *
-     * @param n
-     * @param predicate break if return false
-     */
-    public static <T extends Comparable<T>> void breadthFirstTraversalForNode(Node<T> n, Predicate<Node<T>> predicate) {
-        Deque<Node<T>> queue = new ArrayDeque<>();
-        queue.offer(n);
-        Node<T> c;
-        while (!queue.isEmpty()) {
-            c = queue.poll();
-            if (c.left != null) {
-                queue.offer(c.left);
-            }
-            if (c.right != null) {
-                queue.offer(c.right);
-            }
-            if (!predicate.test(c)) {
-                break;
-            }
-        }
-    }
-
     /**
      * 深度优先遍历，默认中序
      *
@@ -337,14 +301,55 @@ public class BinarySearchTree<T extends Comparable<T>> {
         }
     }
 
+    public int depth() {
+        return this.nodeLevel.length;
+    }
+
+    public int size() {
+        return this.size;
+    }
+
     /**
-     * 根据数据寻找节点
+     * 广度优先遍历
      *
-     * @param data
-     * @return
+     * @param predicate break if return false
      */
-    public Node<T> node(T data) {
-        return match(root, data);
+    public void bfForEach(Predicate<T> predicate) {
+        breadthFirstTraversal(root, predicate);
+    }
+
+    /**
+     * 广度优先遍历
+     *
+     * @param n
+     * @param predicate break if return false
+     */
+    public static <T extends Comparable<T>> void breadthFirstTraversal(Node<T> n, Predicate<T> predicate) {
+        breadthFirstTraversalForNode(n, tNode -> predicate.test(tNode.data));
+    }
+
+    /**
+     * 广度优先遍历
+     *
+     * @param n
+     * @param predicate break if return false
+     */
+    public static <T extends Comparable<T>> void breadthFirstTraversalForNode(Node<T> n, Predicate<Node<T>> predicate) {
+        Deque<Node<T>> queue = new ArrayDeque<>();
+        queue.offer(n);
+        Node<T> c;
+        while (!queue.isEmpty()) {
+            c = queue.poll();
+            if (c.left != null) {
+                queue.offer(c.left);
+            }
+            if (c.right != null) {
+                queue.offer(c.right);
+            }
+            if (!predicate.test(c)) {
+                break;
+            }
+        }
     }
 
     /**
@@ -355,7 +360,6 @@ public class BinarySearchTree<T extends Comparable<T>> {
      */
     public void remove(T data) {
         remove(root, data);
-
     }
 
     /**
@@ -369,44 +373,45 @@ public class BinarySearchTree<T extends Comparable<T>> {
         if (node == null) {
             return;
         }
-        // 叶子节点/左右节点只有一个的节点
+        // 删除 叶子节点或者只有一个子节点的节点
         if (node.left == null || node.right == null) {
             Node<T> pNode;
             Node<T> next = node.left == null ? node.right : node.left;
             if ((pNode = node.parent) == null) {
-                // 根节点
+                // 该节点是根节点
                 next.parent = null;
                 root = next;
                 adjustNodeLevel(node);
                 node = null;
                 size--;
-                return;
-            }
-            int compare = node.data.compareTo(pNode.data);
-            adjustNodeLevel(node);
-            node = null;
-            size--;
-            if (compare > 0) {
-                // right node
-                pNode.right = next;
             } else {
-                // left node
-                pNode.left = next;
+                // 删除非根节点
+                int compare = node.data.compareTo(pNode.data);
+                adjustNodeLevel(node);
+                node = null;
+                size--;
+                if (compare > 0) {
+                    // right node
+                    pNode.right = next;
+                } else {
+                    // left node
+                    pNode.left = next;
+                }
+                if (next != null) {
+                    next.parent = pNode;
+                }
             }
-            if (next != null) {
-                next.parent = pNode;
+        } else {
+            // 查找后继节点
+            Node<T> next = node.right;
+            while (next.left != null) {
+                next = next.left;
             }
-            return;
+            // 后继节点替换当前节点
+            node.data = next.data;
+            // 删除后继节点
+            remove(node.right, next.data);
         }
-        // 查找后继节点
-        Node<T> next = node.right;
-        while (next.left != null) {
-            next = next.left;
-        }
-        // 后继节点替换当前节点
-        node.data = next.data;
-        // 删除后继节点
-        remove(node.right, next.data);
     }
 
     /**
@@ -417,8 +422,10 @@ public class BinarySearchTree<T extends Comparable<T>> {
     private void adjustNodeLevel(Node<T> node) {
         breadthFirstTraversalForNode(node, n -> {
             int depth = n.depth;
+            //子树每个节点往上层移动
             Set<Node<T>> set = nodeLevel[n.depth - 1];
             set.remove(n);
+            //整个子树节点的深度要-1
             n.depth--;
             if (n.left != null) {
                 set.add(n.left);
@@ -427,6 +434,7 @@ public class BinarySearchTree<T extends Comparable<T>> {
                 set.add(n.right);
             }
             if (set.isEmpty()) {
+                //如果该深度层级没有数据了，就把这个数组节点删掉
                 int oldLen = nodeLevel.length;
                 Set<Node<T>>[] newArray = new Set[oldLen - 1];
                 System.arraycopy(nodeLevel, 0, newArray, 0, depth - 1);
