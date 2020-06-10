@@ -1,3 +1,15 @@
+server:
+  port: 4000
+  ssl:
+    key-store-type: JKS
+    key-store: classpath:ssl/server/127.0.0.1-ssl-server.jks
+    key-store-password: 127
+    key-password: 127
+    trust-store-type: JKS
+    trust-store: classpath:ssl/server/127.0.0.1-ssl-server-trust.jks
+    trust-store-password: 127
+    client-auth: need
+
 spring:
   application:
     name: anything-lab
