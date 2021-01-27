@@ -11,8 +11,9 @@
 - [动态数据源应用](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/dynamicdatasource)
 - [一致hash应用](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/consistenthash/SubTableRoutingConsistentHashTest.java)
 - [WaitNotify案例](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/ParityPrint.java)
-- [交替打印123（Lock）](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/Order123PrintLock.java)
+- [交替打印123（ReentrantLock）](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/Order123PrintLock.java)
 - [交替打印123（WaitNotify）](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/Order123PrintWaitNotify.java)
+- [交替打印123（LockSupport）](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/Order123PrintLockSupport.java)
 - [WaitNotify案例](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/ParityPrint.java)
 - [布隆过滤器](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/bloomfilter/BloomFilter.java)
 
