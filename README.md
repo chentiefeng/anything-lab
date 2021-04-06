@@ -1,7 +1,5 @@
 # 各种事物的研究
 
-## 个人博客地址：[htts://chentiefeng.top](htts://chentiefeng.top)
-
 ### 轮子系列
 - [线程池轮子](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/wheel/threadpool/WheelThreadPool.java)
 - [HashMap轮子](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/wheel/collections/WheelHashMap.java)
@@ -16,6 +14,7 @@
 - [交替打印123（LockSupport）](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/Order123PrintLockSupport.java)
 - [WaitNotify案例](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/concurrent/ParityPrint.java)
 - [布隆过滤器](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/bloomfilter/BloomFilter.java)
+- [K8s本地多服务调试](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/k8s/LocalRibbonAutoConfiguration.java)
 
 ### 数据结构
 - [二叉排序树实现](https://github.com/chentiefeng/anything-lab/blob/master/src/main/java/me/ctf/lab/datastructure/BinarySearchTree.java)
